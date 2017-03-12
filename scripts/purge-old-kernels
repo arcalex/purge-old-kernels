@@ -1,0 +1,43 @@
+#!/bin/sh
+
+
+# Copyright (C) 2012 Bibliotheca Alexandrina <http://www.bibalex.org/>
+
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or (at
+# your option) any later version.
+
+# This program is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+# General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# This script purges old kernel packages.  A script to purge old kernel
+# packages is handy on systems where upgrades are installed
+# unattendedly, such as via the unattended-upgrades package, especially
+# when /boot is on a low-capacity file system.
+
+# Installing this script alongside the script that invokes the
+# unattended upgrades (typically, /etc/cron.daily/apt) in a cron
+# directory managed by run-parts will ensure this script is not run in
+# concurrency with unattended upgrades, as run-parts runs executables in
+# series.  The order in which this script and an unattended upgrade are
+# run in a run-parts session is not of much significance.  If this
+# script is run after the unattended upgrade, purges, if any, will occur
+# shortly after the upgrade.  Otherwise, purges, if any, will occur on
+# the next day.
+
+# Each item in the list of successfully installed kernels is purged
+# unless it is the kernel currently loaded in memory, or unless it is
+# the last successfully installed kernel.  It is assumed output from
+# dpkg-query(1) is sorted by version as described in deb-version(5).
+
+# Written by Mahmoud Mubarak <mahmoud.mubarak@bibalex.org>, edited by
+# Youssef Eldakar <youssef.eldakar@bibalex.org>.
+
+current_kernel="linux-image-`uname -r`"
+dpkg-query --show --showformat='${Package}\t${Status}\n'|grep -E '^linux-image-[0-9]+\.[0-9]+\.[0-9]+.*install ok installed'|cut -f1|tac|tail -n+2|grep -vxF "$current_kernel"|xargs -I PKG aptitude -y purge PKG
